@@ -1,0 +1,159 @@
+{
+    "variables": {
+        "regex_filename": "^([A-Z])?([A-Z][a-z0-9]+)+([A-Z])?(\\..+)?$",
+        
+        "regex_method": "^([A-Z][A-z0-9]+)$",
+        "regex_method_private": "^_([a-z][A-z0-9]+)$",
+
+        "unity_callbacks": "Awake|FixedUpdate|LateUpdate|OnAnimatorIK|OnAnimatorMove|OnApplicationFocus|OnApplicationPause|OnApplicationQuit|OnAudioFilterRead|OnBecameVisible|OnBecaseInvisible|OnCollisionEnter|OnCollisionEnter2D|OnCollisionExit|OnCollisionExit2D|OnCollisionStay|OnCollisionStay2D|OnControllerColliderHit|OnDestroy|OnDisable|OnDrawGizmos|OnDrawGizmosSelected|OnEnable|OnGUI|OnMouseDown|OnMouseOver|OnMouseUp|OnMouseUpAsButton|OnParticleColiision|OnParticleSystemStopped|OnParticleTrigger|OnParticleUpdateJobScheduled|OnPostRender|OnPreCull|OnPreRender|OnRenderImage|OnRenderObject|OnTransformChildrenChanged|OnTransformParentChanged|OnTriggerEnter|OnTriggerEnter2D|OnTriggerExit|OnTriggerExit2D|OnTriggerStay|OnTriggerStay2D|OnValidate|OnWillRenderObject|Reset|Start|Update",
+
+        "regex_field": "^([a-z][A-z0-9]*)$",
+        "regex_field_private": "^_([a-z][A-z0-9]*)$",
+        "regex_field_const": "^([A-Z0-9_]*)$",
+        "regex_field_const_private": "^_([A-Z0-9_]*)$",
+
+        "regex_property": "^([A-Z][A-z0-9]*)$",
+        "regex_property_private": "^_([A-Z][A-z0-9]*)$"
+    },
+
+    "rulesets": {
+        ".": {
+            "rules": [
+                "file-filter --childrenfolders --then . check-file-name",     
+                "file-filter --childrenfiles --then check-file-name",
+                "file-filter --childrenfiles --name '.*.cs$' --then check-csharp"
+            ]
+        },
+
+        "check-file-name": {
+            "rules": [
+                "match --value$ {file-name} --pattern {regex_filename} --inverse",
+                "warning --message$ 'File name `{file-name}` does not match the pattern' --path$ {file-path}"
+            ]
+        },
+
+        "check-csharp": {
+            "rules": [
+                "csharp-open --path$ {file-path} --then check-csharp-code"
+            ]
+        },
+
+        "check-csharp-code": {
+            "rules": [
+                "csharp-filter --type method --ispublic --then check-csharp-code-method-public",
+                "csharp-filter --type method --ispublic --isstatic --then check-csharp-code-method-public",
+
+                "csharp-filter --type method --isprivate --then check-csharp-code-method-private",
+                "csharp-filter --type method --isprivate --isstatic --then check-csharp-code-method-private",
+
+                "csharp-filter --type method --then check-csharp-code-region-methods check-csharp-code-region-callbacks",
+                "csharp-filter --type method --isstatic --then check-csharp-code-region-methods",
+
+                "csharp-filter --type field --ispublic --then check-csharp-code-field-public",
+                "csharp-filter --type field --isprotected --then check-csharp-code-field-public",
+                "csharp-filter --type field --isprivate --then check-csharp-code-field-private",
+                "csharp-filter --type field --isconst --ispublic --then check-csharp-code-field-const-public",
+                "csharp-filter --type field --isconst --isprotected --then check-csharp-code-field-const-public",
+                "csharp-filter --type field --isconst --isprivate --then check-csharp-code-field-const-private",
+
+                "csharp-filter --type field --then check-csharp-code-region-fields",
+                "csharp-filter --type field --isconst --then check-csharp-code-region-constants",
+                "csharp-filter --type field --isstatic --then check-csharp-code-region-fields",
+                "csharp-filter --type field --isstatic --isconst --then check-csharp-code-region-constants",
+
+
+                "csharp-filter --type property --ispublic --then check-csharp-code-property-public",
+                "csharp-filter --type property --isprotected --then check-csharp-code-property-public",
+                "csharp-filter --type property --isprivate --then check-csharp-code-property-private"
+            ]
+        },
+
+        "check-csharp-code-region-fields": {
+            "rules": [
+                "match --value$ {csharp-region} --pattern '.*Fields$' --inverse",
+                "warning --message$ 'Field `{csharp-name}` must be in a valid region' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-region-constants": {
+            "rules": [
+                "match --value$ {csharp-region} --pattern '.*Constants$' --inverse",
+                "warning --message$ 'Field `{csharp-name}` must be in a valid region' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-region-methods": {
+            "rules": [
+                "match --value$ {csharp-name} --pattern {unity_callbacks} --inverse",
+                "match --value$ {csharp-region} --pattern '.*Methods$' --inverse",
+                "warning --message$ 'Method `{csharp-name}` must be in a valid region' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-region-callbacks": {
+            "rules": [
+                "match --value$ {csharp-name} --pattern {unity_callbacks}",
+                "match --value$ {csharp-region} --pattern '.*Callbacks$' --inverse",
+                "warning --message$ 'Method `{csharp-name}` must be in a valid region' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-field-public": {
+            "rules": [
+                "match --value$ {csharp-name} --pattern {regex_field} --inverse",
+                "warning --message$ 'Field `{csharp-name}` does not match the rules' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-field-private": {
+            "rules": [
+                "match --value$ {csharp-name} --pattern {regex_field_private} --inverse",
+                "warning --message$ 'Field `{csharp-name}` does not match the rules' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-field-const-public": {
+            "rules": [
+                "match --value$ {csharp-name} --pattern {regex_field_const} --inverse",
+                "warning --message$ 'Field `{csharp-name}` does not match the rules' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-field-const-private": {
+            "rules": [
+                "match --value$ {csharp-name} --pattern {regex_field_const_private} --inverse",
+                "warning --message$ 'Field `{csharp-name}` does not match the rules' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-property-public": {
+            "rules": [
+                "match --value$ {csharp-name} --pattern {regex_property} --inverse",
+                "warning --message$ 'Property `{csharp-name}` does not match the rules' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-property-private": {
+            "rules": [
+                "match --value$ {csharp-name} --pattern {regex_property_private} --inverse",
+                "warning --message$ 'Property `{csharp-name}` does not match the rules' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-method-public": {
+            "rules": [
+                "match --value$ {csharp-name} --pattern {unity_callbacks} --inverse",
+                "match --value$ {csharp-name} --pattern {regex_method} --inverse",
+                "warning --message$ 'Method `{csharp-name}` does not match the rules' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        },
+
+        "check-csharp-code-method-private": {
+            "rules": [
+                "match --value$ {csharp-name} --pattern {unity_callbacks} --inverse",
+                "match --value$ {csharp-name} --pattern {regex_method_private} --inverse",
+                "warning --message$ 'Method `{csharp-name}` does not match the rules' --path$ {file-path}({csharp-position}) --key$ {file-path}"
+            ]
+        }
+    }
+}
